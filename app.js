@@ -1,0 +1,80 @@
+/* Canonix — logique de l’application (utilise les constantes de config.js) */
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sb=SUPABASE_URL&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
+const seed={documents:[
+{id:'d1',title:'Méditations métaphysiques',author:'René Descartes',category:'Philosophie',year:1641,description:'Six méditations où le doute méthodique conduit au cogito.',file_url:''},
+{id:'d2',title:'Les Fleurs du mal',author:'Charles Baudelaire',category:'Littérature',year:1857,description:'Recueil majeur de la poésie moderne française.',file_url:''},
+{id:'d3',title:'De l’esprit des lois',author:'Montesquieu',category:'Droit',year:1748,description:'Traité de théorie politique sur la séparation des pouvoirs.',file_url:''},
+{id:'d4',title:'Traité élémentaire de chimie',author:'Antoine Lavoisier',category:'Sciences',year:1789,description:'Acte fondateur de la chimie moderne.',file_url:''},
+{id:'d5',title:'Histoire de la Révolution française',author:'Jules Michelet',category:'Histoire',year:1847,description:'Une fresque romantique et engagée.',file_url:''},
+{id:'d6',title:'Le Spleen de Paris',author:'Charles Baudelaire',category:'Arts',year:1869,description:'Petits poèmes en prose sur la vie urbaine.',file_url:''}].map(d=>({...d,created_at:'2026-01-01'})),
+posts:[{id:'p1',title:'Bienvenue sur Canonix',author_name:'L’équipe',body:'Ce blog est le lieu de la discussion : réagissez aux textes, posez vos questions à l’auteur et échangez avec les autres lecteurs.',created_at:'2026-01-02'}],comments:[],history:[]};
+const ls=(k,d)=>JSON.parse(localStorage.getItem('cx_'+k)||'null')??d, ss=(k,v)=>localStorage.setItem('cx_'+k,JSON.stringify(v));
+async function all(t){if(sb){const{data}=await sb.from(t).select('*').order('created_at',{ascending:false});return data||[]}return ls(t,seed[t])}
+async function put(t,r){r.created_at=new Date().toISOString();if(sb){const{data,error}=await sb.from(t).insert(r).select().single();if(error)throw error;return data}r.id=crypto.randomUUID();const a=await all(t);a.unshift(r);ss(t,a);return r}
+async function del(t,id){if(sb){await sb.from(t).delete().eq('id',id);return}ss(t,(await all(t)).filter(x=>x.id!==id))}
+let U=null;
+async function loadUser(){if(sb){const{data}=await sb.auth.getUser();const u=data.user;if(!u){U=null;return}const{data:p}=await sb.from('profiles').select('*').eq('id',u.id).single();U={id:u.id,email:u.email,name:p?.name||u.email,admin:p?.role==='admin'}}else{const u=ls('user',null);U=u&&{...u,admin:u.email===DEMO_ADMIN}}}
+const log=(doc_id,kind,q)=>{if(U)put('history',{user_id:U.id,doc_id:doc_id||null,kind,q:q||null}).catch(()=>{})};
+const toast=m=>{const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),2600)};
+const card=d=>`<a class="card" style="--c:${CATS[d.category]||'var(--acc)'}" href="#/doc/${d.id}"><h3>${esc(d.title)}</h3><span>${esc(d.author)}</span><small>${esc(d.category)} · ${d.year||''}</small></a>`;
+const fmt=s=>new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+const V={
+async home(){const d=await all('documents');return`<section class="hero"><h1>Toute la bibliothèque,<br>à portée de main.</h1><p>Parcourez, cherchez et téléchargez des textes de référence — sans compte, ou avec un espace personnel qui garde la trace de vos lectures.</p>
+<form class="sf" data-f="search"><input name="q" placeholder="Titre, auteur, sujet…" aria-label="Rechercher"><button>Rechercher</button></form>
+<div class="shelf">${Object.entries(CATS).map(([k,c],i)=>`<button class="spine" style="--c:${c};height:${150+(i*23%60)}px" data-cat="${k}">${k}</button>`).join('')}</div></section>
+<section class="sec"><h2>Derniers ajouts</h2><div class="grid">${d.slice(0,6).map(card).join('')}</div></section>`},
+async cat(p){const q=(p.get('q')||'').toLowerCase(),c=p.get('cat')||'';if(q)log(null,'search',q);
+const d=(await all('documents')).filter(x=>(!c||x.category===c)&&(!q||[x.title,x.author,x.description,x.category].join(' ').toLowerCase().includes(q)));
+return`<section class="sec"><h2>Catalogue${c?' · '+esc(c):''}</h2><form class="sf" data-f="search"><input name="q" value="${esc(p.get('q')||'')}" placeholder="Rechercher…"><button>Rechercher</button></form>
+<div class="row" style="margin:16px 0"><a class="btn ghost" href="#/catalogue">Tout</a>${Object.keys(CATS).map(k=>`<a class="btn ghost" href="#/catalogue?cat=${k}">${k}</a>`).join('')}</div>
+${d.length?`<div class="grid">${d.map(card).join('')}</div>`:'<p class="m">Aucun résultat. Essayez un autre mot ou retirez le filtre de catégorie.</p>'}</section>`},
+async doc(id){const d=(await all('documents')).find(x=>x.id===id);if(!d)return'<p class="sec">Document introuvable.</p>';log(id,'view');
+return`<section class="sec narrow"><a href="#/catalogue" class="m">← Catalogue</a><h1 style="font-size:2.6rem;margin-top:16px">${esc(d.title)}</h1><p class="m">${esc(d.author)} · ${esc(d.category)} · ${d.year||''}</p><p style="font:1.2rem/1.7 var(--serif)">${esc(d.description)}</p>
+<div class="row"><a class="btn" data-a="dl" data-id="${d.id}" href="${esc(d.file_url||'#')}" ${d.file_url?'download target="_blank" rel="noopener"':''}>Télécharger</a>${d.file_url?`<a class="btn ghost" target="_blank" rel="noopener" href="${esc(d.file_url)}">Lire en ligne</a>`:''}</div>
+${U?'':'<p class="m">Connectez-vous pour retrouver ce document dans votre espace.</p>'}</section>`},
+async blog(){const p=await all('posts');return`<section class="sec narrow"><h2>Blog & discussions</h2>${p.map(x=>`<a class="card" style="margin-bottom:14px" href="#/blog/${x.id}"><h3>${esc(x.title)}</h3><small>${esc(x.author_name)} · ${fmt(x.created_at)}</small></a>`).join('')||'<p class="m">Aucun article pour le moment.</p>'}</section>`},
+async post(id){const x=(await all('posts')).find(p=>p.id===id);if(!x)return'<p class="sec">Article introuvable.</p>';const c=(await all('comments')).filter(c=>c.post_id===id).reverse();
+return`<section class="sec narrow"><a class="m" href="#/blog">← Blog</a><h1 style="font-size:2.4rem;margin-top:16px">${esc(x.title)}</h1><p class="m">${esc(x.author_name)} · ${fmt(x.created_at)}</p><div style="font:1.15rem/1.8 var(--serif);white-space:pre-wrap">${esc(x.body)}</div>
+<p class="box">Une question pour l’auteur ? <a href="#/contact">Contactez-le</a> par WhatsApp ou e-mail.</p><h3 style="margin-top:36px">${c.length} commentaire${c.length>1?'s':''}</h3>${c.map(m=>`<div class="cm"><b>${esc(m.author_name)}</b> <small class="m">${fmt(m.created_at)}</small>${U&&(U.admin||U.id===m.user_id)?` <a href="#" data-a="delc" data-id="${m.id}" class="m">Supprimer</a>`:''}<br>${esc(m.body)}</div>`).join('')}
+${U?`<form data-f="comment" data-id="${id}"><label>Votre message</label><textarea name="body" required></textarea><p><button>Publier</button></p></form>`:'<p class="box">Pour participer à la discussion, <a href="#/connexion">connectez-vous ou créez un compte</a>.</p>'}</section>`},
+async contact(){return`<section class="sec narrow"><h2>Contacter l’auteur</h2><p class="m">Écrivez directement à ${esc(CONTACT.nom)}, par WhatsApp ou par e-mail.</p><div class="row"><a class="btn" href="https://wa.me/${CONTACT.whatsapp}" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost" href="mailto:${CONTACT.email}">E-mail</a></div>
+<form data-f="contact" class="box"><h3>Ou rédigez votre message ici</h3><label>Votre nom</label><input name="name" value="${esc(U?.name||'')}" required><label>Message</label><textarea name="msg" required></textarea><p class="row"><button value="wa">Envoyer sur WhatsApp</button><button value="mail" class="ghost">Envoyer par e-mail</button></p></form></section>`},
+async connexion(){return`<section class="sec narrow"><h2>Espace lecteur</h2><form data-f="auth" class="box"><div id="nm" hidden><label>Nom affiché</label><input name="name"></div><label>E-mail</label><input name="email" type="email" required><label>Mot de passe</label><input name="pw" type="password" minlength="6" required><p class="row"><button name="mode" value="in">Se connecter</button><button name="mode" value="up" class="ghost" onclick="$('#nm').hidden=false">Créer un compte</button></p></form>${sb?'':`<p class="m">Mode démo : aucun serveur n’est configuré. Utilisez ${DEMO_ADMIN} pour tester l’administration.</p>`}</section>`},
+async espace(){if(!U)return location.hash='#/connexion',''; const h=await all('history'),d=await all('documents'),mine=sb?h:h.filter(x=>x.user_id===U.id);
+const seen=[...new Map(mine.filter(x=>x.kind!=='search'&&x.doc_id).map(x=>[x.doc_id,x])).values()],qs=[...new Set(mine.filter(x=>x.kind==='search').map(x=>x.q))].slice(0,12);
+return`<section class="sec"><h2>Bonjour ${esc(U.name)}</h2><p class="row"><button class="ghost" data-a="out">Se déconnecter</button>${U.admin?'<a class="btn" href="#/admin">Administration</a>':''}</p>
+<h3>Documents consultés</h3><div class="grid">${seen.map(x=>d.find(y=>y.id===x.doc_id)).filter(Boolean).map(card).join('')||'<p class="m">Rien pour l’instant : ouvrez un document depuis le catalogue.</p>'}</div>
+<h3 style="margin-top:32px">Recherches récentes</h3><div class="row">${qs.map(q=>`<a class="btn ghost" href="#/catalogue?q=${encodeURIComponent(q)}">${esc(q)}</a>`).join('')||'<p class="m">Aucune recherche enregistrée.</p>'}</div></section>`},
+async admin(){if(!U?.admin)return'<p class="sec">Accès réservé aux administrateurs.</p>';const d=await all('documents'),p=await all('posts');
+return`<section class="sec"><h2>Administration</h2><div class="row" style="align-items:flex-start"><form data-f="doc" class="box" style="flex:1;min-width:280px"><h3>Nouveau document</h3><label>Titre</label><input name="title" required><label>Auteur</label><input name="author"><label>Catégorie</label><select name="category">${Object.keys(CATS).map(k=>`<option>${k}</option>`).join('')}</select><label>Année</label><input name="year" type="number"><label>Description</label><textarea name="description"></textarea><label>Fichier (PDF, EPUB…)</label><input name="file" type="file"><label>…ou lien du fichier</label><input name="url" type="url"><p><button>Ajouter</button></p></form>
+<form data-f="post" class="box" style="flex:1;min-width:280px"><h3>Nouvel article de blog</h3><label>Titre</label><input name="title" required><label>Texte</label><textarea name="body" style="min-height:260px" required></textarea><p><button>Publier</button></p></form></div>
+<h3>Documents (${d.length})</h3>${d.map(x=>`<div class="cm">${esc(x.title)} <small class="m">${esc(x.author)}</small> <a href="#" data-a="deld" data-id="${x.id}">Supprimer</a></div>`).join('')}
+<h3 style="margin-top:28px">Articles (${p.length})</h3>${p.map(x=>`<div class="cm">${esc(x.title)} <a href="#" data-a="delp" data-id="${x.id}">Supprimer</a></div>`).join('')}</section>`}};
+async function render(){await loadUser();const[path,qs]=location.hash.slice(1).split('?'),p=new URLSearchParams(qs||''),[,r,id]=path.split('/');
+$('#nav').innerHTML=`<a href="#/catalogue" class="${r==='catalogue'?'on':''}">Catalogue</a><a href="#/blog" class="${r==='blog'?'on':''}">Blog</a><a href="#/contact" class="${r==='contact'?'on':''}">Contact</a>${U?`<a href="#/espace">Mon espace</a>`:`<a href="#/connexion">Connexion</a>`}`;
+const m={'':()=>V.home(),catalogue:()=>V.cat(p),doc:()=>V.doc(id),blog:()=>id?V.post(id):V.blog(),contact:()=>V.contact(),connexion:()=>V.connexion(),espace:()=>V.espace(),admin:()=>V.admin()};
+$('#app').innerHTML=await(m[r||'']||m[''])();scrollTo(0,0)}
+const F={
+search:f=>location.hash='#/catalogue?q='+encodeURIComponent(f.get('q')),
+contact(f,e){const t='Bonjour, ici '+f.get('name')+' (via Canonix).\n\n'+f.get('msg');if(e.submitter.value==='wa')open('https://wa.me/'+CONTACT.whatsapp+'?text='+encodeURIComponent(t),'_blank');else location.href='mailto:'+CONTACT.email+'?subject='+encodeURIComponent('Message via Canonix')+'&body='+encodeURIComponent(t)},
+async auth(f,e){const em=f.get('email'),pw=f.get('pw'),up=e.submitter.value==='up',name=f.get('name')||em.split('@')[0];
+if(sb){const r=up?await sb.auth.signUp({email:em,password:pw,options:{data:{name}}}):await sb.auth.signInWithPassword({email:em,password:pw});if(r.error)return toast(r.error.message);if(up&&!r.data.session)return toast('Vérifiez votre e-mail pour confirmer le compte.')}
+else ss('user',{id:'u_'+em,email:em,name});location.hash='#/espace';render()},
+async comment(f,e){await put('comments',{post_id:e.target.dataset.id,user_id:U.id,author_name:U.name,body:f.get('body')});render()},
+async post(f){await put('posts',{title:f.get('title'),body:f.get('body'),author_name:U.name});toast('Publié');render()},
+async doc(f){let url=f.get('url'),file=f.get('file');if(sb&&file&&file.size){const n=Date.now()+'-'+file.name.replace(/[^\w.-]/g,'_'),{error}=await sb.storage.from('documents').upload(n,file);if(error)return toast(error.message);url=sb.storage.from('documents').getPublicUrl(n).data.publicUrl}
+await put('documents',{title:f.get('title'),author:f.get('author'),category:f.get('category'),year:+f.get('year')||null,description:f.get('description'),file_url:url||''});toast('Document ajouté');render()}};
+document.addEventListener('submit',async e=>{const k=e.target.dataset.f;if(!k)return;e.preventDefault();try{await F[k](new FormData(e.target),e)}catch(x){toast(x.message||'Erreur')}});
+let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;if(!ls('noinst',0))$('#inst').hidden=false});
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-a],[data-cat]');if(!t)return;const a=t.dataset.a,id=t.dataset.id;
+if(t.dataset.cat)return location.hash='#/catalogue?cat='+t.dataset.cat;
+if(a==='install'){ip.prompt();$('#inst').hidden=true}
+else if(a==='noinst'){ss('noinst',1);$('#inst').hidden=true}
+else if(a==='theme'){const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'}
+else if(a==='out'){if(sb)await sb.auth.signOut();else localStorage.removeItem('cx_user');location.hash='#/';render()}
+else if(a==='dl'){log(id,'download');if(t.getAttribute('href')==='#'){e.preventDefault();const d=(await all('documents')).find(x=>x.id===id);const b=new Blob([d.title+'\n'+d.author+'\n\n(Aucun fichier associé en mode démo.)'],{type:'text/plain'}),l=document.createElement('a');l.href=URL.createObjectURL(b);l.download=d.title+'.txt';l.click()}}
+else if(a.startsWith('del')){e.preventDefault();if(!confirm('Supprimer définitivement ?'))return;await del({delc:'comments',deld:'documents',delp:'posts'}[a],id);render()}});
+addEventListener('hashchange',render);render();
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
+
