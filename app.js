@@ -74,12 +74,19 @@ let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;if(!ls
 const ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
 standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches,safari=/safari/i.test(ua)&&!/crios|fxios|edgios|opios/i.test(ua);
 if(isIOS&&!standalone&&!ls('noinst',0)){$('#inst span').textContent='Ajoutez Canonix à votre écran d’accueil pour l’ouvrir comme une application.';const b=$('#inst [data-a=install]');b.dataset.a='ios';b.textContent='Comment faire';$('#inst').hidden=false}
-function showIOS(){const s=document.createElement('div');s.style.cssText='position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end';
-s.innerHTML=`<div class="box" style="margin:0;width:100%;border-radius:16px 16px 0 0;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0))"><h3>Installer Canonix sur iPhone</h3><ol style="padding-left:20px;line-height:1.9"><li>Touchez le bouton <b>Partager</b> (le carré avec une flèche vers le haut) de Safari, ou le menu « … » selon votre version d’iOS.</li><li>Faites défiler puis touchez <b>Sur l’écran d’accueil</b>.</li><li>Touchez <b>Ajouter</b> : l’icône Canonix apparaît sur votre écran.</li></ol>${safari?'':'<p class="m">Vous n’êtes pas dans Safari : si l’option n’apparaît pas, ouvrez cette page dans Safari.</p>'}<button style="width:100%;margin-top:8px" data-a="closeios">Compris</button></div>`;
+function sheet(t,steps,note){const s=document.createElement('div');s.style.cssText='position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end';
+s.innerHTML=`<div class="box" style="margin:0;width:100%;max-width:560px;margin-inline:auto;border-radius:16px 16px 0 0;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0))"><h3>${t}</h3><ol style="padding-left:20px;line-height:1.9">${steps.map(x=>`<li>${x}</li>`).join('')}</ol>${note?`<p class="m">${note}</p>`:''}<button style="width:100%;margin-top:8px" data-a="closeios">Compris</button></div>`;
 s.onclick=e=>{if(e.target===s||e.target.dataset.a==='closeios')s.remove()};document.body.append(s)}
+function showIOS(){sheet('Installer Canonix sur iPhone',['Touchez le bouton <b>Partager</b> (le carré avec une flèche vers le haut) de Safari, ou le menu « … » selon votre version d’iOS.','Faites défiler puis touchez <b>Sur l’écran d’accueil</b>.','Touchez <b>Ajouter</b> : l’icône Canonix apparaît sur votre écran.'],safari?'':'Vous n’êtes pas dans Safari : si l’option n’apparaît pas, ouvrez cette page dans Safari.')}
+function showInstall(){if(ip){ip.prompt();return}if(isIOS)return showIOS();
+if(safari&&/Macintosh/.test(ua))return sheet('Installer Canonix sur Mac',['Dans la barre de menus de Safari, ouvrez <b>Fichier</b>.','Choisissez <b>Ajouter au Dock…</b>','Confirmez avec <b>Ajouter</b>.']);
+sheet('Installer Canonix',['Ouvrez le menu de votre navigateur (⋮ ou …).','Choisissez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.'],'Firefox sur ordinateur ne permet pas d’installer ce type d’application : utilisez Chrome, Edge ou Safari.')}
+if(standalone)$('#ib').hidden=true;
+addEventListener('appinstalled',()=>{$('#ib').hidden=true;$('#inst').hidden=true});
 document.addEventListener('click',async e=>{const t=e.target.closest('[data-a],[data-cat]');if(!t)return;const a=t.dataset.a,id=t.dataset.id;
 if(t.dataset.cat)return location.hash='#/catalogue?cat='+t.dataset.cat;
 if(a==='ios'){showIOS()}
+else if(a==='guide'){showInstall()}
 else if(a==='install'){ip&&ip.prompt();$('#inst').hidden=true}
 else if(a==='noinst'){ss('noinst',1);$('#inst').hidden=true}
 else if(a==='theme'){const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'}
