@@ -23,7 +23,8 @@ const V={
 async home(){const d=await all('documents');return`<section class="hero"><h1>Toute la bibliothèque,<br>à portée de main.</h1><p>Parcourez, cherchez et téléchargez des textes de référence — sans compte, ou avec un espace personnel qui garde la trace de vos lectures.</p>
 <form class="sf" data-f="search"><input name="q" placeholder="Titre, auteur, sujet…" aria-label="Rechercher"><button>Rechercher</button></form>
 <div class="shelf">${Object.entries(CATS).map(([k,c],i)=>`<button class="spine" style="--c:${c};height:${150+(i*23%60)}px" data-cat="${k}">${k}</button>`).join('')}</div></section>
-<section class="sec"><h2>Derniers ajouts</h2><div class="grid">${d.slice(0,6).map(card).join('')}</div></section>`},
+<section class="sec"><h2>Derniers ajouts</h2><div class="grid">${d.slice(0,6).map(card).join('')}</div></section>
+<section class="sec"><div class="box row" style="justify-content:space-between"><div><small class="m">L’auteur</small><h3 style="margin:0">${esc(AUTHOR.nom)}</h3><span class="m">${esc(AUTHOR.titre)}</span></div><a class="btn" href="#/contact">Contacter l’auteur</a></div></section>`},
 async cat(p){const q=(p.get('q')||'').toLowerCase(),c=p.get('cat')||'';if(q)log(null,'search',q);
 const d=(await all('documents')).filter(x=>(!c||x.category===c)&&(!q||[x.title,x.author,x.description,x.category].join(' ').toLowerCase().includes(q)));
 return`<section class="sec"><h2>Catalogue${c?' · '+esc(c):''}</h2><form class="sf" data-f="search"><input name="q" value="${esc(p.get('q')||'')}" placeholder="Rechercher…"><button>Rechercher</button></form>
@@ -52,7 +53,9 @@ return`<section class="sec"><h2>Administration</h2><div class="row" style="align
 <h3>Documents (${d.length})</h3>${d.map(x=>`<div class="cm">${esc(x.title)} <small class="m">${esc(x.author)}</small> <a href="#" data-a="deld" data-id="${x.id}">Supprimer</a></div>`).join('')}
 <h3 style="margin-top:28px">Articles (${p.length})</h3>${p.map(x=>`<div class="cm">${esc(x.title)} <a href="#" data-a="delp" data-id="${x.id}">Supprimer</a></div>`).join('')}</section>`}};
 async function render(){await loadUser();const[path,qs]=location.hash.slice(1).split('?'),p=new URLSearchParams(qs||''),[,r,id]=path.split('/');
-$('#nav').innerHTML=`<a href="#/catalogue" class="${r==='catalogue'?'on':''}">Catalogue</a><a href="#/blog" class="${r==='blog'?'on':''}">Blog</a><a href="#/contact" class="${r==='contact'?'on':''}">Contact</a>${U?`<a href="#/espace">Mon espace</a>`:`<a href="#/connexion">Connexion</a>`}`;
+const k=r||'',I=(p)=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const T=[['','Accueil','<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>'],['catalogue','Catalogue','<path d="M4 4h4v16H4zM10 4h4v16h-4zM17 5l3.5 1-4 14-3.5-1z"/>'],['blog','Blog','<path d="M4 5h16v11H9l-5 4z"/>'],['contact','Contact','<path d="M3 6h18v12H3zM3 7l9 7 9-7"/>'],U?['espace','Mon espace','<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 15-5 16 0"/>']:['connexion','Connexion','<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 15-5 16 0"/>']];
+$('#nav').innerHTML=T.map(([h,l,p])=>`<a href="#/${h}" class="${k===h?'on':''}">${I(p)}<span>${l}</span></a>`).join('');
 const m={'':()=>V.home(),catalogue:()=>V.cat(p),doc:()=>V.doc(id),blog:()=>id?V.post(id):V.blog(),contact:()=>V.contact(),connexion:()=>V.connexion(),espace:()=>V.espace(),admin:()=>V.admin()};
 $('#app').innerHTML=await(m[r||'']||m[''])();scrollTo(0,0)}
 const F={
