@@ -1,6 +1,4 @@
-/* Canonix — configuration personnelle.
-   Ce fichier est le vôtre : app.js peut évoluer sans l’écraser. */
-/* ===== Configuration : renseignez votre projet Supabase (laisser vide = mode démo local) ===== */
+/* ===== Configuration : renseigner le projet Supabase (laisser vide = mode démo local) ===== */
 const SUPABASE_URL='', SUPABASE_KEY='';
 const DEMO_ADMIN='admin@canonix.demo';
 /* Coordonnées de l’auteur : WhatsApp au format international, sans + ni espaces */
