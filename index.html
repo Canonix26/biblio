@@ -44,10 +44,10 @@ textarea{min-height:110px}label{display:block;font-size:.88rem;color:var(--mute)
 .card:hover{border-color:var(--acc)}.card small,.m{color:var(--mute);font-size:.88rem}
 .sec{padding:36px 0}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px;margin:16px 0}
-.narrow{max-width:640px}.cm{border-top:1px solid var(--line);padding:12px 0}
+.narrow{max-width:640px}.cm{border-top:1px solid var(--line);padding:12px 0}.tag{background:var(--acc);color:var(--onacc);font-size:.72rem;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:4px}.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:8px;background:var(--c)}
 .bar{background:var(--ink);color:var(--bg);padding:10px 0;font-size:.92rem}.bar .w{display:flex;gap:12px;align-items:center;justify-content:space-between}
 footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mute);font-size:.9rem;margin-top:40px}
-.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:9}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:9;max-width:min(92vw,520px);text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.28)}.toast.ok{background:#111;color:#fff;border:1px solid #3a3a3a}.toast.ok::before{content:'✓ ';color:#4ade80;font-weight:700}.toast.err{background:#9b1c1c;color:#fff}.toast.err::before{content:'✕ ';font-weight:700}
 @media(max-width:720px){.sf{flex-direction:column}body{padding-bottom:calc(68px + env(safe-area-inset-bottom,0))}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:8;display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:#0d0d0d;border-top:3px solid var(--acc);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0));font-size:.72rem}
 nav a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;border-radius:10px;border-bottom:0!important}nav a.on{color:var(--acc);font-weight:600}nav svg{display:block}.toast{bottom:calc(84px + env(safe-area-inset-bottom,0))}.hero{padding-top:36px}}
