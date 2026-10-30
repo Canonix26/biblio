@@ -4,4 +4,4 @@ const DEMO_ADMIN='admin@canonix.demo';
 /* Coordonnées de l’auteur : WhatsApp au format international, sans + ni espaces */
 const CONTACT={nom:'l’abbé Magloire Aka',email:'canonix26@gmail.com',whatsapp:'2250700000000'};
 const AUTHOR={nom:'Abbé Magloire Aka',titre:'Docteur en Droit canonique'};
-const CATS={'Droit canonique':'#c9692f',Philosophie:'#1f5c52',Littérature:'#7a2e3a',Sciences:'#2f4a7a',Histoire:'#8a6a2a',Droit:'#4a3a6a',Arts:'#a0522d'};
+const CATS={'Droit canonique':'#c2490d',Philosophie:'#2c2c2c',Littérature:'#7a2a1a',Sciences:'#2f3f52',Histoire:'#8a6420',Droit:'#4a4a4a',Arts:'#6b4f3a'};
