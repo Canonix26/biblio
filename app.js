@@ -20,7 +20,7 @@ const toast=m=>{const t=document.createElement('div');t.className='toast';t.text
 const card=d=>`<a class="card" style="--c:${CATS[d.category]||'var(--acc)'}" href="#/doc/${d.id}"><h3>${esc(d.title)}</h3><span>${esc(d.author)}</span><small>${esc(d.category)} · ${d.year||''}</small></a>`;
 const fmt=s=>new Date(s).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
 const V={
-async home(){const d=await all('documents');return`<section class="hero"><h1>Toute la bibliothèque,<br>à portée de main.</h1><p>Parcourez, cherchez et téléchargez des textes de référence — sans compte, ou avec un espace personnel qui garde la trace de vos lectures.</p>
+async home(){const d=await all('documents');return`<section class="hero"><h1>Tous les carrousels,<br>à portée de main.</h1><p>Parcourez, cherchez et téléchargez des textes de référence — sans compte, ou avec un espace personnel qui garde la trace de vos lectures.</p>
 <form class="sf" data-f="search"><input name="q" placeholder="Titre, auteur, sujet…" aria-label="Rechercher"><button>Rechercher</button></form>
 <div class="shelf">${Object.entries(CATS).map(([k,c],i)=>`<button class="spine" style="--c:${c};height:${150+(i*23%60)}px" data-cat="${k}">${k}</button>`).join('')}</div></section>
 <section class="sec"><h2>Derniers ajouts</h2><div class="grid">${d.slice(0,6).map(card).join('')}</div></section>
