@@ -70,9 +70,17 @@ async doc(f){let url=f.get('url'),file=f.get('file');if(sb&&file&&file.size){con
 await put('documents',{title:f.get('title'),author:f.get('author'),category:f.get('category'),year:+f.get('year')||null,description:f.get('description'),file_url:url||''});toast('Document ajouté');render()}};
 document.addEventListener('submit',async e=>{const k=e.target.dataset.f;if(!k)return;e.preventDefault();try{await F[k](new FormData(e.target),e)}catch(x){toast(x.message||'Erreur')}});
 let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;if(!ls('noinst',0))$('#inst').hidden=false});
+/* iPhone/iPad : Safari n’a pas d’invite d’installation automatique, on guide l’utilisateur */
+const ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
+standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches,safari=/safari/i.test(ua)&&!/crios|fxios|edgios|opios/i.test(ua);
+if(isIOS&&!standalone&&!ls('noinst',0)){$('#inst span').textContent='Ajoutez Canonix à votre écran d’accueil pour l’ouvrir comme une application.';const b=$('#inst [data-a=install]');b.dataset.a='ios';b.textContent='Comment faire';$('#inst').hidden=false}
+function showIOS(){const s=document.createElement('div');s.style.cssText='position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end';
+s.innerHTML=`<div class="box" style="margin:0;width:100%;border-radius:16px 16px 0 0;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0))"><h3>Installer Canonix sur iPhone</h3><ol style="padding-left:20px;line-height:1.9"><li>Touchez le bouton <b>Partager</b> (le carré avec une flèche vers le haut) de Safari, ou le menu « … » selon votre version d’iOS.</li><li>Faites défiler puis touchez <b>Sur l’écran d’accueil</b>.</li><li>Touchez <b>Ajouter</b> : l’icône Canonix apparaît sur votre écran.</li></ol>${safari?'':'<p class="m">Vous n’êtes pas dans Safari : si l’option n’apparaît pas, ouvrez cette page dans Safari.</p>'}<button style="width:100%;margin-top:8px" data-a="closeios">Compris</button></div>`;
+s.onclick=e=>{if(e.target===s||e.target.dataset.a==='closeios')s.remove()};document.body.append(s)}
 document.addEventListener('click',async e=>{const t=e.target.closest('[data-a],[data-cat]');if(!t)return;const a=t.dataset.a,id=t.dataset.id;
 if(t.dataset.cat)return location.hash='#/catalogue?cat='+t.dataset.cat;
-if(a==='install'){ip.prompt();$('#inst').hidden=true}
+if(a==='ios'){showIOS()}
+else if(a==='install'){ip&&ip.prompt();$('#inst').hidden=true}
 else if(a==='noinst'){ss('noinst',1);$('#inst').hidden=true}
 else if(a==='theme'){const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'}
 else if(a==='out'){if(sb)await sb.auth.signOut();else localStorage.removeItem('cx_user');location.hash='#/';render()}
